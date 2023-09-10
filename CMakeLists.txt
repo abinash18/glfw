@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 include(CMakeDependentOption)
 
+if(POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+endif()
+
+if(POLICY CMP0069)
+    cmake_policy(SET CMP0069 NEW)
+endif()
+
+if(POLICY CMP0077)
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -37,6 +49,30 @@ endif()
 
 if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
+# --------------------------------------------------------------------
+# Apply Microsoft C runtime library option
+# This is here because it also applies to tests and examples
+# --------------------------------------------------------------------
+if(MSVC AND NOT USE_MSVC_RUNTIME_LIBRARY_DLL)
+    if(CMAKE_VERSION VERSION_LESS 3.15)
+        foreach(flag CMAKE_C_FLAGS
+            CMAKE_C_FLAGS_DEBUG
+            CMAKE_C_FLAGS_RELEASE
+            CMAKE_C_FLAGS_MINSIZEREL
+            CMAKE_C_FLAGS_RELWITHDEBINFO)
+            if(flag MATCHES "/MD")
+                string(REGEX REPLACE "/MD" "/MT" ${flag} "${${flag}}")
+            endif()
+
+            if(flag MATCHES "/MDd")
+                string(REGEX REPLACE "/MDd" "/MTd" ${flag} "${${flag}}")
+            endif()
+        endforeach()
+    else()
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
 endif()
 
 add_subdirectory(src)
